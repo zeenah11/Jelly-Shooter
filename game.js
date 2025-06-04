@@ -509,6 +509,12 @@ function hideUpgradeMenu() {
 
 // --- UPGRADE BUTTONS ---
 
+document.getElementById('upgradeAttackRange').onclick = () => {
+  player.attackRange += 20; // Increase radius by 20 pixels per upgrade
+  hideUpgradeMenu();
+};
+
+
 document.getElementById('upgradeFireRate').onclick = () => {
   weapon.fireRate = Math.max(10, weapon.fireRate - 10);
   hideUpgradeMenu();
