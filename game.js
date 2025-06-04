@@ -1,9 +1,15 @@
-// game.js
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-const W = canvas.width;
-const H = canvas.height;
+let W, H;
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+}
+resize();
+window.addEventListener('resize', resize);
 
 let keys = {};
 let frame = 0;
@@ -13,14 +19,26 @@ let wave = 1;
 let enemies = [];
 let bullets = [];
 let orbs = [];
+let isPaused = false;
 
 const player = {
-  x: W / 2,
-  y: H / 2,
+  x: 0,
+  y: 0,
   r: 15,
   color: '#00f0ff',
-  speed: 2.5,
-  hp: 100
+  speed: 3,
+  hp: 100,
+};
+
+player.x = W / 2;
+player.y = H / 2;
+
+let weapon = {
+  fireRate: 60, // frames per shot, lower is faster
+  damage: 1,
+  bulletSpeed: 6,
+  lastShotFrame: 0,
+  unlockedWeapons: ['basic'],
 };
 
 function drawPlayer() {
@@ -37,11 +55,11 @@ function spawnEnemy() {
   let side = Math.floor(Math.random() * 4);
   let x = side === 0 ? 0 : side === 1 ? W : Math.random() * W;
   let y = side === 2 ? 0 : side === 3 ? H : Math.random() * H;
-  enemies.push({ x, y, r: 12, hp: 10, speed: 1 });
+  enemies.push({ x, y, r: 12, hp: 10, speed: 1 + wave * 0.1 });
 }
 
 function drawEnemies() {
-  enemies.forEach(e => {
+  enemies.forEach((e) => {
     ctx.beginPath();
     ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
     ctx.fillStyle = '#ff0044';
@@ -53,35 +71,77 @@ function drawEnemies() {
 }
 
 function moveEnemies() {
-  enemies.forEach(e => {
+  enemies.forEach((e) => {
     let dx = player.x - e.x;
     let dy = player.y - e.y;
     let dist = Math.hypot(dx, dy);
-    e.x += (dx / dist) * e.speed;
-    e.y += (dy / dist) * e.speed;
+    if (dist > 0) {
+      e.x += (dx / dist) * e.speed;
+      e.y += (dy / dist) * e.speed;
+    }
   });
 }
 
 function shoot() {
+  if (frame - weapon.lastShotFrame < weapon.fireRate) return;
+
+  weapon.lastShotFrame = frame;
+
+  // Find nearest enemy
+  if (enemies.length === 0) {
+    // Shoot straight up if no enemies
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      dx: 0,
+      dy: -weapon.bulletSpeed,
+      r: 5,
+      color: '#0f0',
+      damage: weapon.damage,
+    });
+    return;
+  }
+
+  let nearest = null;
+  let nearestDist = Infinity;
+  enemies.forEach((e) => {
+    let dist = Math.hypot(e.x - player.x, e.y - player.y);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearest = e;
+    }
+  });
+
+  // Calculate normalized direction to nearest enemy
+  let dx = nearest.x - player.x;
+  let dy = nearest.y - player.y;
+  let mag = Math.hypot(dx, dy);
+  dx /= mag;
+  dy /= mag;
+
   bullets.push({
     x: player.x,
     y: player.y,
-    dx: 0,
-    dy: -5,
+    dx: dx * weapon.bulletSpeed,
+    dy: dy * weapon.bulletSpeed,
     r: 5,
-    color: '#0f0'
+    color: '#0f0',
+    damage: weapon.damage,
   });
 }
 
 function moveBullets() {
-  bullets.forEach(b => {
+  bullets.forEach((b) => {
+    b.x += b.dx;
     b.y += b.dy;
   });
-  bullets = bullets.filter(b => b.y > 0);
+  bullets = bullets.filter(
+    (b) => b.x > 0 && b.x < W && b.y > 0 && b.y < H
+  );
 }
 
 function drawBullets() {
-  bullets.forEach(b => {
+  bullets.forEach((b) => {
     ctx.beginPath();
     ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
     ctx.fillStyle = b.color;
@@ -98,9 +158,12 @@ function handleCollisions() {
       let dx = b.x - e.x;
       let dy = b.y - e.y;
       if (Math.hypot(dx, dy) < b.r + e.r) {
-        enemies.splice(j, 1);
+        e.hp -= b.damage;
         bullets.splice(i, 1);
-        orbs.push({ x: e.x, y: e.y, r: 4 });
+        if (e.hp <= 0) {
+          enemies.splice(j, 1);
+          orbs.push({ x: e.x, y: e.y, r: 4 });
+        }
       }
     });
   });
@@ -111,13 +174,28 @@ function handleCollisions() {
     if (Math.hypot(dx, dy) < player.r + o.r) {
       xp++;
       orbs.splice(i, 1);
-      if (xp % 5 === 0) level++;
+      if (xp % 5 === 0) {
+        level++;
+        pauseAndShowUpgrades();
+      }
+    }
+  });
+
+  enemies.forEach((e) => {
+    let dx = player.x - e.x;
+    let dy = player.y - e.y;
+    if (Math.hypot(dx, dy) < player.r + e.r) {
+      player.hp -= 0.5; // damage per frame contact
+      if (player.hp <= 0) {
+        alert('Game Over! Reload to try again.');
+        isPaused = true;
+      }
     }
   });
 }
 
 function drawOrbs() {
-  orbs.forEach(o => {
+  orbs.forEach((o) => {
     ctx.beginPath();
     ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
     ctx.fillStyle = '#fff700';
@@ -132,40 +210,156 @@ function drawUI() {
   document.getElementById('wave').innerText = 'Wave: ' + wave;
   document.getElementById('level').innerText = 'Level: ' + level;
   document.getElementById('xp').innerText = 'XP: ' + xp;
+  document.getElementById('hp').innerText = 'HP: ' + Math.floor(player.hp);
 }
 
-function update() {
-  ctx.clearRect(0, 0, W, H);
+function pauseAndShowUpgrades() {
+  isPaused = true;
+  document.getElementById('upgradeMenu').style.display = 'block';
+}
 
-  moveEnemies();
-  moveBullets();
-  handleCollisions();
+function hideUpgradeMenu() {
+  document.getElementById('upgradeMenu').style.display = 'none';
+  isPaused = false;
+}
 
-  drawPlayer();
-  drawEnemies();
-  drawBullets();
-  drawOrbs();
-  drawUI();
+document.getElementById('upgradeFireRate').onclick = () => {
+  weapon.fireRate = Math.max(10, weapon.fireRate - 10);
+  hideUpgradeMenu();
+};
+document.getElementById('upgradeDamage').onclick = () => {
+  weapon.damage += 1;
+  hideUpgradeMenu();
+};
+document.getElementById('upgradeBulletSpeed').onclick = () => {
+  weapon.bulletSpeed += 1;
+  hideUpgradeMenu();
+};
+document.getElementById('upgradeNewWeapon').onclick = () => {
+  // Simple example: new weapon fires 2 bullets instead of 1
+  if (!weapon.unlockedWeapons.includes('doubleShot')) {
+    weapon.unlockedWeapons.push('doubleShot');
+    // Change shoot function behavior for double shot below
+  }
+  hideUpgradeMenu();
+};
 
-  if (frame % 60 === 0) shoot();
-  if (frame % 300 === 0) {
-    spawnEnemy();
-    wave++;
+// Updated shoot function to handle doubleShot weapon unlock
+function shootUpdated() {
+  if (frame - weapon.lastShotFrame < weapon.fireRate) return;
+
+  weapon.lastShotFrame = frame;
+
+  if (enemies.length === 0) {
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      dx: 0,
+      dy: -weapon.bulletSpeed,
+      r: 5,
+      color: '#0f0',
+      damage: weapon.damage,
+    });
+    if (weapon.unlockedWeapons.includes('doubleShot')) {
+      bullets.push({
+        x: player.x,
+        y: player.y,
+        dx: 0.5 * weapon.bulletSpeed,
+        dy: -weapon.bulletSpeed,
+        r: 5,
+        color: '#0f0',
+        damage: weapon.damage,
+      });
+    }
+    return;
   }
 
-  frame++;
-  requestAnimationFrame(update);
+  let nearest = null;
+  let nearestDist = Infinity;
+  enemies.forEach((e) => {
+    let dist = Math.hypot(e.x - player.x, e.y - player.y);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearest = e;
+    }
+  });
+
+  let dx = nearest.x - player.x;
+  let dy = nearest.y - player.y;
+  let mag = Math.hypot(dx, dy);
+  dx /= mag;
+  dy /= mag;
+
+  bullets.push({
+    x: player.x,
+    y: player.y,
+    dx: dx * weapon.bulletSpeed,
+    dy: dy * weapon.bulletSpeed,
+    r: 5,
+    color: '#0f0',
+    damage: weapon.damage,
+  });
+
+  if (weapon.unlockedWeapons.includes('doubleShot')) {
+    // Slight angle offset for second bullet
+    const angle = Math.atan2(dy, dx);
+    const spread = 0.3; // radians
+
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      dx: Math.cos(angle + spread) * weapon.bulletSpeed,
+      dy: Math.sin(angle + spread) * weapon.bulletSpeed,
+      r: 5,
+      color: '#0f0',
+      damage: weapon.damage,
+    });
+  }
 }
 
-addEventListener('keydown', e => keys[e.key] = true);
-addEventListener('keyup', e => keys[e.key] = false);
-
+// Movement handler
 function movePlayer() {
   if (keys['w'] || keys['ArrowUp']) player.y -= player.speed;
   if (keys['s'] || keys['ArrowDown']) player.y += player.speed;
   if (keys['a'] || keys['ArrowLeft']) player.x -= player.speed;
   if (keys['d'] || keys['ArrowRight']) player.x += player.speed;
+
+  // Clamp to screen
+  player.x = Math.min(W - player.r, Math.max(player.r, player.x));
+  player.y = Math.min(H - player.r, Math.max(player.r, player.y));
 }
 
-setInterval(movePlayer, 1000 / 60);
-update();
+// Main loop
+function gameLoop() {
+  if (!isPaused) {
+    frame++;
+    ctx.clearRect(0, 0, W, H);
+    movePlayer();
+    moveEnemies();
+    moveBullets();
+
+    if (frame % 300 === 0) {
+      wave++;
+      spawnEnemy();
+    }
+
+    shootUpdated();
+    handleCollisions();
+
+    drawPlayer();
+    drawEnemies();
+    drawBullets();
+    drawOrbs();
+    drawUI();
+  }
+  requestAnimationFrame(gameLoop);
+}
+
+window.addEventListener('keydown', (e) => {
+  keys[e.key.toLowerCase()] = true;
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+gameLoop();
