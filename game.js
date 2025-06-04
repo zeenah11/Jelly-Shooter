@@ -55,7 +55,16 @@ function spawnEnemy() {
   let side = Math.floor(Math.random() * 4);
   let x = side === 0 ? 0 : side === 1 ? W : Math.random() * W;
   let y = side === 2 ? 0 : side === 3 ? H : Math.random() * H;
-  enemies.push({ x, y, r: 12, hp: 10, speed: 1 + wave * 0.1 });
+
+  // Enemy HP increases gradually by level, starting at 1
+  let baseHP = 1;
+  let hp = baseHP + level * 0.5; // increase by 0.5 per level
+
+  // Enemy speed starts slower, increases with level but capped at max 3
+  let baseSpeed = 0.7;
+  let speed = Math.min(baseSpeed + level * 0.1, 3);
+
+  enemies.push({ x, y, r: 12, hp, speed });
 }
 
 function drawEnemies() {
@@ -82,14 +91,12 @@ function moveEnemies() {
   });
 }
 
-function shoot() {
+function shootUpdated() {
   if (frame - weapon.lastShotFrame < weapon.fireRate) return;
 
   weapon.lastShotFrame = frame;
 
-  // Find nearest enemy
   if (enemies.length === 0) {
-    // Shoot straight up if no enemies
     bullets.push({
       x: player.x,
       y: player.y,
@@ -99,6 +106,17 @@ function shoot() {
       color: '#0f0',
       damage: weapon.damage,
     });
+    if (weapon.unlockedWeapons.includes('doubleShot')) {
+      bullets.push({
+        x: player.x,
+        y: player.y,
+        dx: 0.5 * weapon.bulletSpeed,
+        dy: -weapon.bulletSpeed,
+        r: 5,
+        color: '#0f0',
+        damage: weapon.damage,
+      });
+    }
     return;
   }
 
@@ -112,7 +130,6 @@ function shoot() {
     }
   });
 
-  // Calculate normalized direction to nearest enemy
   let dx = nearest.x - player.x;
   let dy = nearest.y - player.y;
   let mag = Math.hypot(dx, dy);
@@ -128,6 +145,22 @@ function shoot() {
     color: '#0f0',
     damage: weapon.damage,
   });
+
+  if (weapon.unlockedWeapons.includes('doubleShot')) {
+    // Slight angle offset for second bullet
+    const angle = Math.atan2(dy, dx);
+    const spread = 0.3; // radians
+
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      dx: Math.cos(angle + spread) * weapon.bulletSpeed,
+      dy: Math.sin(angle + spread) * weapon.bulletSpeed,
+      r: 5,
+      color: '#0f0',
+      damage: weapon.damage,
+    });
+  }
 }
 
 function moveBullets() {
@@ -236,100 +269,22 @@ document.getElementById('upgradeBulletSpeed').onclick = () => {
   hideUpgradeMenu();
 };
 document.getElementById('upgradeNewWeapon').onclick = () => {
-  // Simple example: new weapon fires 2 bullets instead of 1
   if (!weapon.unlockedWeapons.includes('doubleShot')) {
     weapon.unlockedWeapons.push('doubleShot');
-    // Change shoot function behavior for double shot below
   }
   hideUpgradeMenu();
 };
 
-// Updated shoot function to handle doubleShot weapon unlock
-function shootUpdated() {
-  if (frame - weapon.lastShotFrame < weapon.fireRate) return;
-
-  weapon.lastShotFrame = frame;
-
-  if (enemies.length === 0) {
-    bullets.push({
-      x: player.x,
-      y: player.y,
-      dx: 0,
-      dy: -weapon.bulletSpeed,
-      r: 5,
-      color: '#0f0',
-      damage: weapon.damage,
-    });
-    if (weapon.unlockedWeapons.includes('doubleShot')) {
-      bullets.push({
-        x: player.x,
-        y: player.y,
-        dx: 0.5 * weapon.bulletSpeed,
-        dy: -weapon.bulletSpeed,
-        r: 5,
-        color: '#0f0',
-        damage: weapon.damage,
-      });
-    }
-    return;
-  }
-
-  let nearest = null;
-  let nearestDist = Infinity;
-  enemies.forEach((e) => {
-    let dist = Math.hypot(e.x - player.x, e.y - player.y);
-    if (dist < nearestDist) {
-      nearestDist = dist;
-      nearest = e;
-    }
-  });
-
-  let dx = nearest.x - player.x;
-  let dy = nearest.y - player.y;
-  let mag = Math.hypot(dx, dy);
-  dx /= mag;
-  dy /= mag;
-
-  bullets.push({
-    x: player.x,
-    y: player.y,
-    dx: dx * weapon.bulletSpeed,
-    dy: dy * weapon.bulletSpeed,
-    r: 5,
-    color: '#0f0',
-    damage: weapon.damage,
-  });
-
-  if (weapon.unlockedWeapons.includes('doubleShot')) {
-    // Slight angle offset for second bullet
-    const angle = Math.atan2(dy, dx);
-    const spread = 0.3; // radians
-
-    bullets.push({
-      x: player.x,
-      y: player.y,
-      dx: Math.cos(angle + spread) * weapon.bulletSpeed,
-      dy: Math.sin(angle + spread) * weapon.bulletSpeed,
-      r: 5,
-      color: '#0f0',
-      damage: weapon.damage,
-    });
-  }
-}
-
-// Movement handler
 function movePlayer() {
-  if (keys['w'] || keys['ArrowUp']) player.y -= player.speed;
-  if (keys['s'] || keys['ArrowDown']) player.y += player.speed;
-  if (keys['a'] || keys['ArrowLeft']) player.x -= player.speed;
-  if (keys['d'] || keys['ArrowRight']) player.x += player.speed;
+  if (keys['w'] || keys['arrowup']) player.y -= player.speed;
+  if (keys['s'] || keys['arrowdown']) player.y += player.speed;
+  if (keys['a'] || keys['arrowleft']) player.x -= player.speed;
+  if (keys['d'] || keys['arrowright']) player.x += player.speed;
 
-  // Clamp to screen
   player.x = Math.min(W - player.r, Math.max(player.r, player.x));
   player.y = Math.min(H - player.r, Math.max(player.r, player.y));
 }
 
-// Main loop
 function gameLoop() {
   if (!isPaused) {
     frame++;
@@ -338,7 +293,8 @@ function gameLoop() {
     moveEnemies();
     moveBullets();
 
-    if (frame % 300 === 0) {
+    let spawnInterval = Math.max(60, 300 - level * 20);
+    if (frame % spawnInterval === 0) {
       wave++;
       spawnEnemy();
     }
