@@ -4,35 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Jelly Shooter</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="titleScreen" class="overlay">
-    <h1>JELLY SHOOTER</h1>
+  <div id="titleScreen">
+    <h1>Jelly Shooter</h1>
     <button id="startBtn">Start Game</button>
   </div>
-
-  <div id="gameOverScreen" class="overlay hidden">
+  <canvas id="gameCanvas"></canvas>
+  <div id="gameOverScreen" class="hidden">
     <h2>Game Over</h2>
-    <p id="finalScore">Score: 0</p>
     <button id="restartBtn">Restart</button>
   </div>
-
-  <canvas id="gameCanvas"></canvas>
-
-  <div id="hud">
-    <span id="level">Level: 1</span>
-    <span id="xp">XP: 0</span>
-    <span id="wave">Wave: 1</span>
-    <span id="hp">HP: 100</span>
+  <div id="levelUpMenu" class="hidden">
+    <h3>Level Up!</h3>
+    <div id="upgradeOptions"></div>
   </div>
-
-  <div id="upgradeMenu" class="hidden">
-    <h3>Choose an Upgrade</h3>
-    <div id="upgradeChoices"></div>
-    <button id="rerollBtn">Reroll</button>
-  </div>
-
   <script src="game.js"></script>
 </body>
 </html>
