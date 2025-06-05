@@ -9,22 +9,21 @@ body, html {
 
 canvas {
   display: block;
+  background: #111;
   width: 100vw;
   height: 100vh;
-  background: #111;
-  cursor: none;
 }
 
-#titleScreen, #gameOverScreen, #levelUpMenu {
+#titleScreen, #gameOverScreen {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  text-align: center;
   background: rgba(0,0,0,0.8);
   padding: 20px;
-  border: 2px solid #0ff;
   border-radius: 10px;
+  border: 2px solid #0ff;
+  text-align: center;
 }
 
 .hidden {
@@ -33,17 +32,10 @@ canvas {
 
 button {
   background: #0ff;
+  color: black;
   border: none;
   padding: 10px 20px;
-  margin-top: 10px;
   cursor: pointer;
-  color: black;
   font-weight: bold;
   border-radius: 5px;
-}
-
-#upgradeOptions button {
-  display: block;
-  margin: 10px auto;
-  width: 200px;
 }
