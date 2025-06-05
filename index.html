@@ -2,80 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Neon Shooter Game</title>
-  <style>
-    html, body {
-      margin: 0; padding: 0; overflow: hidden; background: #000;
-      font-family: monospace;
-      color: #0ff;
-      user-select: none;
-    }
-    canvas {
-      display: block;
-      background: #001010;
-    }
-    #upgradeMenu {
-      display: none;
-      position: fixed;
-      top: 20%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,0.8);
-      padding: 20px;
-      border-radius: 10px;
-      color: #0ff;
-      text-align: center;
-      z-index: 1000;
-    }
-    #upgradeMenu button {
-      margin: 5px;
-      padding: 10px 15px;
-      background: #003344;
-      border: 1px solid #0ff;
-      color: #0ff;
-      cursor: pointer;
-      font-size: 1em;
-      border-radius: 5px;
-    }
-    #upgradeMenu button:hover {
-      background: #005577;
-    }
-    #ui {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      color: #0ff;
-      font-size: 1.2em;
-      text-shadow: 0 0 5px #0ff;
-      z-index: 1000;
-    }
-    #ui div {
-      margin-bottom: 5px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jelly Shooter</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="titleScreen" class="overlay">
+    <h1>JELLY SHOOTER</h1>
+    <button id="startBtn">Start Game</button>
+  </div>
 
-<canvas id="gameCanvas"></canvas>
+  <div id="gameOverScreen" class="overlay hidden">
+    <h2>Game Over</h2>
+    <p id="finalScore">Score: 0</p>
+    <button id="restartBtn">Restart</button>
+  </div>
 
-<div id="ui">
-  <div id="wave">Wave: 1</div>
-  <div id="level">Level: 1</div>
-  <div id="xp">XP: 0</div>
-  <div id="hp">HP: 100</div>
-</div>
+  <canvas id="gameCanvas"></canvas>
 
-<div id="upgradeMenu">
-  <h3>Choose Upgrade</h3>
-  <button id="upgradeAttackRange">Increase Attack Range</button>
-  <button id="upgradeFireRate">Increase Fire Rate</button>
-  <button id="upgradeDamage">Increase Damage</button>
-  <button id="upgradeBulletSpeed">Increase Bullet Speed</button>
-  <button id="upgradeNewWeapon">Unlock Double Shot</button>
-</div>
+  <div id="hud">
+    <span id="level">Level: 1</span>
+    <span id="xp">XP: 0</span>
+    <span id="wave">Wave: 1</span>
+    <span id="hp">HP: 100</span>
+  </div>
 
-<script src="game.js"></script>
+  <div id="upgradeMenu" class="hidden">
+    <h3>Choose an Upgrade</h3>
+    <div id="upgradeChoices"></div>
+    <button id="rerollBtn">Reroll</button>
+  </div>
 
+  <script src="game.js"></script>
 </body>
 </html>
