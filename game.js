@@ -1,22 +1,10 @@
 let gameRunning = false;
-
-document.addEventListener("DOMContentLoaded", () => {
-  const startBtn = document.getElementById("startBtn");
-  const restartBtn = document.getElementById("restartBtn");
-
-  startBtn.addEventListener("click", () => {
-    console.log("Start clicked");
-    document.getElementById("titleScreen").classList.add("hidden");
-    gameRunning = true;
-    gameLoop();
-  });
-
-  if (restartBtn) {
-    restartBtn.addEventListener("click", () => {
-      location.reload();
-    });
-  }
-});
+let player = {
+  x: window.innerWidth / 2,
+  y: window.innerHeight / 2,
+  img: new Image()
+};
+player.img.src = "https://lqy3lriiybxcejon.public.blob.vercel-storage.com/6d4172ae-28f0-4e4b-89d8-466c8eab28d3/1733672555641-removebg-preview-IVzWkVo3h7bols5hn9Yln8BxJaKBAz.png?OtWs";
 
 function gameLoop() {
   if (!gameRunning) return;
@@ -26,12 +14,18 @@ function gameLoop() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  ctx.fillStyle = "black";
+  // Draw background
+  ctx.fillStyle = "#000";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.fillStyle = "#0ff";
-  ctx.font = "30px Arial";
-  ctx.fillText("Game Running", 100, 100);
+  // Draw player
+  const imgSize = 64;
+  ctx.drawImage(player.img, player.x - imgSize / 2, player.y - imgSize / 2, imgSize, imgSize);
 
   requestAnimationFrame(gameLoop);
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+  const startBtn = document.getElementById("startBtn");
+  const restartBtn = document.getElementById("restartBtn");
+
