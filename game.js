@@ -1,40 +1,11 @@
-// Sample structure of game.js including button event handlers
 let gameRunning = false;
-
-function gameLoop() {
-  if (!gameRunning) return;
-  // main game loop logic here
-  requestAnimationFrame(gameLoop);
-}
-
-function showLevelUpMenu() {
-  document.getElementById("levelUpMenu").classList.remove("hidden");
-  const options = document.getElementById("upgradeOptions");
-  options.innerHTML = "";
-
-  const upgrades = [
-    "Increase Range",
-    "Add Dagger",
-    "Add Laser",
-    "Upgrade Grenade"
-  ];
-
-  upgrades.forEach(upgrade => {
-    const btn = document.createElement("button");
-    btn.textContent = upgrade;
-    btn.onclick = () => {
-      document.getElementById("levelUpMenu").classList.add("hidden");
-      // handle upgrade effect logic here
-    };
-    options.appendChild(btn);
-  });
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("startBtn");
   const restartBtn = document.getElementById("restartBtn");
 
   startBtn.addEventListener("click", () => {
+    console.log("Start clicked");
     document.getElementById("titleScreen").classList.add("hidden");
     gameRunning = true;
     gameLoop();
@@ -46,3 +17,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+function gameLoop() {
+  if (!gameRunning) return;
+
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  ctx.fillStyle = "black";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "#0ff";
+  ctx.font = "30px Arial";
+  ctx.fillText("Game Running", 100, 100);
+
+  requestAnimationFrame(gameLoop);
+}
